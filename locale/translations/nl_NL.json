@@ -92,6 +92,7 @@
         "Er is %d feed.",
         "Er zijn %d feeds."
     ],
+    "page.categories.unread_counter": "Aantal ongelezen vermeldingen",
     "page.new_category.title": "Nieuwe categorie",
     "page.new_user.title": "Nieuwe gebruiker",
     "page.edit_category.title": "Bewerken van categorie: %s",
@@ -275,7 +276,9 @@
     "form.feed.label.allow_self_signed_certificates": "Sta zelfondertekende of ongeldige certificaten toe",
     "form.feed.label.fetch_via_proxy": "Ophalen via proxy",
     "form.feed.label.disabled": "Vernieuw deze feed niet",
+    "form.feed.label.hide_globally": "Verberg items in de globale ongelezen lijst",
     "form.category.label.title": "Naam",
+    "form.category.hide_globally": "Verberg items in de globale ongelezen lijst",
     "form.user.label.username": "Gebruikersnaam",
     "form.user.label.password": "Wachtwoord",
     "form.user.label.confirmation": "Bevestig wachtwoord",

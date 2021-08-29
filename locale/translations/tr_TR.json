@@ -92,6 +92,7 @@
         "%d besleme var.",
         "%d besleme var."
     ],
+    "page.categories.unread_counter": "Okunmamış iletilerin sayısı",
     "page.new_category.title": "Yeni Kategori",
     "page.new_user.title": "Yeni Kullanıcı",
     "page.edit_category.title": "Kategoriyi Düzenle: %s",
@@ -275,7 +276,9 @@
     "form.feed.label.allow_self_signed_certificates": "Kendinden imzalı veya geçersiz sertifikalara izin ver",
     "form.feed.label.fetch_via_proxy": "Proxy ile çek",
     "form.feed.label.disabled": "Bu beslemeyi yenileme",
+    "form.feed.label.hide_globally": "Genel okunmamış listesindeki girişleri gizle",
     "form.category.label.title": "Başlık",
+    "form.category.hide_globally": "Genel okunmamış listesindeki girişleri gizle",
     "form.user.label.username": "Kullanıcı Adı",
     "form.user.label.password": "Parola",
     "form.user.label.confirmation": "Parola Doğrulama",

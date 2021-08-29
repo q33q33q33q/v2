@@ -92,6 +92,7 @@
         "C'è %d feed.",
         "Ci sono %d feed."
     ],
+    "page.categories.unread_counter": "Numero di voci non lette",
     "page.new_category.title": "Nuova categoria",
     "page.new_user.title": "Nuovo utente",
     "page.edit_category.title": "Modifica categoria: %s",
@@ -275,7 +276,9 @@
     "form.feed.label.allow_self_signed_certificates": "Consenti certificati autofirmati o non validi",
     "form.feed.label.fetch_via_proxy": "Recuperare tramite proxy",
     "form.feed.label.disabled": "Non aggiornare questo feed",
+    "form.feed.label.hide_globally": "Nascondere le voci nella lista globale dei non letti",
     "form.category.label.title": "Titolo",
+    "form.category.hide_globally": "Nascondere le voci nella lista globale dei non letti",
     "form.user.label.username": "Nome utente",
     "form.user.label.password": "Password",
     "form.user.label.confirmation": "Conferma password",

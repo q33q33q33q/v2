@@ -76,7 +76,7 @@
     "entry.share.title": "分享这篇文章",
     "entry.unshare.label": "取消分享",
     "entry.shared_entry.title": "打开公共链接",
-    "entry.shared_entry.label": "分享分享",
+    "entry.shared_entry.label": "分享",
     "entry.estimated_reading_time": [
         "%d分钟阅读",
         "%d分钟阅读"
@@ -91,6 +91,7 @@
     "page.categories.feed_count": [
         "有 %d 个源"
     ],
+    "page.categories.unread_counter": "未读条目数",
     "page.new_category.title": "新分类",
     "page.new_user.title": "新用户",
     "page.edit_category.title": "编辑分类 : %s",
@@ -273,7 +274,9 @@
     "form.feed.label.allow_self_signed_certificates": "允许自签名或无效的证书",
     "form.feed.label.fetch_via_proxy": "通过代理获取",
     "form.feed.label.disabled": "请勿刷新此Feed",
+    "form.feed.label.hide_globally": "隐藏全局未读列表中的条目",
     "form.category.label.title": "标题",
+    "form.category.hide_globally": "隐藏全局未读列表中的条目",
     "form.user.label.username": "用户名",
     "form.user.label.password": "密码",
     "form.user.label.confirmation": "确认",

@@ -69,9 +69,10 @@ func FindSubscriptions(websiteURL, userAgent, cookie, username, password string,
 func parseWebPage(websiteURL string, data io.Reader) (Subscriptions, *errors.LocalizedError) {
 	var subscriptions Subscriptions
 	queries := map[string]string{
-		"link[type='application/rss+xml']":  "rss",
-		"link[type='application/atom+xml']": "atom",
-		"link[type='application/json']":     "json",
+		"link[type='application/rss+xml']":   "rss",
+		"link[type='application/atom+xml']":  "atom",
+		"link[type='application/json']":      "json",
+		"link[type='application/feed+json']": "json",
 	}
 
 	doc, err := goquery.NewDocumentFromReader(data)
@@ -146,6 +147,7 @@ func tryWellKnownUrls(websiteURL, userAgent, cookie, username, password string) 
 		"/feed.xml": "atom",
 		"/feed/":    "atom",
 		"/rss.xml":  "rss",
+		"/rss/":     "rss",
 	}
 
 	lastCharacter := websiteURL[len(websiteURL)-1:]

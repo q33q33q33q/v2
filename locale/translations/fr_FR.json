@@ -92,6 +92,7 @@
         "Il y a %d abonnement.",
         "Il y a %d abonnements."
     ],
+    "page.categories.unread_counter": "Nombre d'entrées non lues",
     "page.new_category.title": "Nouvelle catégorie",
     "page.new_user.title": "Nouvel Utilisateur",
     "page.edit_category.title": "Modification de la catégorie : %s",
@@ -275,7 +276,9 @@
     "form.feed.label.allow_self_signed_certificates": "Autoriser les certificats auto-signés ou non valides",
     "form.feed.label.fetch_via_proxy": "Récupérer via proxy",
     "form.feed.label.disabled": "Ne pas actualiser ce flux",
+    "form.feed.label.hide_globally": "Masquer les entrées dans la liste globale non lue",
     "form.category.label.title": "Titre",
+    "form.category.hide_globally": "Masquer les entrées dans la liste globale non lue",
     "form.user.label.username": "Nom d'utilisateur",
     "form.user.label.password": "Mot de passe",
     "form.user.label.confirmation": "Confirmation du mot de passe",
