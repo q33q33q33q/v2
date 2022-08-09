@@ -68,7 +68,7 @@ a:hover {
     border-bottom: 1px dotted var(--header-list-border-color);
 }
 
-.header li:hover a {
+.header li a:hover {
     color: #888;
 }
 
@@ -82,7 +82,8 @@ a:hover {
 
 .header .active a {
     color: var(--header-active-link-color);
-    font-weight: 500;
+    /* Note: Firefox on Windows does not show the link as bold if the value is under 600 */
+    font-weight: 600;
 }
 
 .header a:hover {
@@ -117,15 +118,14 @@ a:hover {
     color: #666;
 }
 
-.page-header ul,
-.page-footer ul {
-    margin-left: 25px;
-}
-
 .page-header li,
 .page-footer li {
-    list-style-type: circle;
+    list-style-type: none;
     line-height: 1.8em;
+}
+
+.page-header ul a .icon {
+    padding-bottom: 2px;
 }
 
 /* Logo */
@@ -243,11 +243,6 @@ a:hover {
         line-height: normal;
         border: none;
         font-size: 1.0em;
-    }
-
-    .page-header ul,
-    .page-footer ul {
-        margin-left: 0;
     }
 
     .page-header li,
@@ -454,10 +449,13 @@ a.button {
     color: var(--button-primary-color);
 }
 
+a.button-primary:hover,
+a.button-primary:focus,
 .button-primary:hover,
 .button-primary:focus {
     border-color: var(--button-primary-focus-border-color);
     background: var(--button-primary-focus-background);
+    color: var(--button-primary-color);
 }
 
 .button-danger {
@@ -543,6 +541,10 @@ a.button {
 }
 
 /* Modals */
+template {
+    display: none;
+}
+
 #modal-left {
     position: fixed;
     top: 0;
@@ -631,13 +633,25 @@ a.button {
     font-size: 1.1em;
     display: flex;
     align-items: center;
-    padding-top: 8px;
+}
+
+.pagination-top {
+    padding-bottom: 8px;
 }
 
 .pagination-bottom {
+    padding-top: 8px;
+}
+
+.pagination-entry-top {
+    padding-top: 8px;
+}
+
+.pagination-entry-bottom {
     border-top: 1px dotted var(--pagination-border-color);
     margin-bottom: 15px;
     margin-top: 50px;
+    padding-top: 8px;
 }
 
 .pagination > div {
@@ -657,7 +671,7 @@ a.button {
 }
 
 .pagination a {
-    color: var(--pagination-color);
+    color: var(--pagination-link-color);
 }
 
 .pagination a:hover,
@@ -742,10 +756,23 @@ a.button {
     display: none;
 }
 
+.touch-item {
+    transition-property: transform;
+    transition-duration: 0s;
+    transition-timing-function: ease-out;
+}
+
 /* Feeds list */
 article.feed-parsing-error {
     background-color: var(--feed-parsing-error-background-color);
-    border-color: #aaa;
+    border-style: var(--feed-parsing-error-border-style);
+    border-color: var(--feed-parsing-error-border-color);
+}
+
+article.feed-has-unread {
+    background-color: var(--feed-has-unread-background-color);
+    border-style: var(--feed-has-unread-border-style);
+    border-color: var(--feed-has-unread-border-color);
 }
 
 .parsing-error {
@@ -756,6 +783,13 @@ article.feed-parsing-error {
 
 .parsing-error-count {
     cursor: pointer;
+}
+
+/* Categories list */
+article.category-has-unread {
+    background-color: var(--category-has-unread-background-color);
+    border-style: var(--category-has-unread-border-style);
+    border-color: var(--category-has-unread-border-color);
 }
 
 /* Icons */
@@ -1039,4 +1073,12 @@ details.entry-enclosures {
     font-weight: 600;
     text-decoration: none;
     font-size: 1.2em;
+}
+
+.rules-entry {
+    display: flex;
+}
+
+.disabled {
+    opacity: 20%;
 }

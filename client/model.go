@@ -18,23 +18,27 @@ const (
 
 // User represents a user in the system.
 type User struct {
-	ID                int64      `json:"id"`
-	Username          string     `json:"username"`
-	Password          string     `json:"password,omitempty"`
-	IsAdmin           bool       `json:"is_admin"`
-	Theme             string     `json:"theme"`
-	Language          string     `json:"language"`
-	Timezone          string     `json:"timezone"`
-	EntryDirection    string     `json:"entry_sorting_direction"`
-	Stylesheet        string     `json:"stylesheet"`
-	GoogleID          string     `json:"google_id"`
-	OpenIDConnectID   string     `json:"openid_connect_id"`
-	EntriesPerPage    int        `json:"entries_per_page"`
-	KeyboardShortcuts bool       `json:"keyboard_shortcuts"`
-	ShowReadingTime   bool       `json:"show_reading_time"`
-	EntrySwipe        bool       `json:"entry_swipe"`
-	LastLoginAt       *time.Time `json:"last_login_at"`
-	DisplayMode       string     `json:"display_mode"`
+	ID                  int64      `json:"id"`
+	Username            string     `json:"username"`
+	Password            string     `json:"password,omitempty"`
+	IsAdmin             bool       `json:"is_admin"`
+	Theme               string     `json:"theme"`
+	Language            string     `json:"language"`
+	Timezone            string     `json:"timezone"`
+	EntryDirection      string     `json:"entry_sorting_direction"`
+	EntryOrder          string     `json:"entry_sorting_order"`
+	Stylesheet          string     `json:"stylesheet"`
+	GoogleID            string     `json:"google_id"`
+	OpenIDConnectID     string     `json:"openid_connect_id"`
+	EntriesPerPage      int        `json:"entries_per_page"`
+	KeyboardShortcuts   bool       `json:"keyboard_shortcuts"`
+	ShowReadingTime     bool       `json:"show_reading_time"`
+	EntrySwipe          bool       `json:"entry_swipe"`
+	LastLoginAt         *time.Time `json:"last_login_at"`
+	DisplayMode         string     `json:"display_mode"`
+	DefaultReadingSpeed int        `json:"default_reading_speed"`
+	CJKReadingSpeed     int        `json:"cjk_reading_speed"`
+	DefaultHomePage     string     `json:"default_home_page"`
 }
 
 func (u User) String() string {
@@ -52,21 +56,25 @@ type UserCreationRequest struct {
 
 // UserModificationRequest represents the request to update a user.
 type UserModificationRequest struct {
-	Username          *string `json:"username"`
-	Password          *string `json:"password"`
-	IsAdmin           *bool   `json:"is_admin"`
-	Theme             *string `json:"theme"`
-	Language          *string `json:"language"`
-	Timezone          *string `json:"timezone"`
-	EntryDirection    *string `json:"entry_sorting_direction"`
-	Stylesheet        *string `json:"stylesheet"`
-	GoogleID          *string `json:"google_id"`
-	OpenIDConnectID   *string `json:"openid_connect_id"`
-	EntriesPerPage    *int    `json:"entries_per_page"`
-	KeyboardShortcuts *bool   `json:"keyboard_shortcuts"`
-	ShowReadingTime   *bool   `json:"show_reading_time"`
-	EntrySwipe        *bool   `json:"entry_swipe"`
-	DisplayMode       *string `json:"display_mode"`
+	Username            *string `json:"username"`
+	Password            *string `json:"password"`
+	IsAdmin             *bool   `json:"is_admin"`
+	Theme               *string `json:"theme"`
+	Language            *string `json:"language"`
+	Timezone            *string `json:"timezone"`
+	EntryDirection      *string `json:"entry_sorting_direction"`
+	EntryOrder          *string `json:"entry_sorting_order"`
+	Stylesheet          *string `json:"stylesheet"`
+	GoogleID            *string `json:"google_id"`
+	OpenIDConnectID     *string `json:"openid_connect_id"`
+	EntriesPerPage      *int    `json:"entries_per_page"`
+	KeyboardShortcuts   *bool   `json:"keyboard_shortcuts"`
+	ShowReadingTime     *bool   `json:"show_reading_time"`
+	EntrySwipe          *bool   `json:"entry_swipe"`
+	DisplayMode         *string `json:"display_mode"`
+	DefaultReadingSpeed *int    `json:"default_reading_speed"`
+	CJKReadingSpeed     *int    `json:"cjk_reading_speed"`
+	DefaultHomePage     *string `json:"default_home_page"`
 }
 
 // Users represents a list of users.
@@ -126,6 +134,7 @@ type Feed struct {
 	Username                    string    `json:"username"`
 	Password                    string    `json:"password"`
 	Category                    *Category `json:"category,omitempty"`
+	HideGlobally                bool      `json:"hide_globally"`
 }
 
 // FeedCreationRequest represents the request to create a feed.
@@ -145,6 +154,7 @@ type FeedCreationRequest struct {
 	RewriteRules                string `json:"rewrite_rules"`
 	BlocklistRules              string `json:"blocklist_rules"`
 	KeeplistRules               string `json:"keeplist_rules"`
+	HideGlobally                bool   `json:"hide_globally"`
 }
 
 // FeedModificationRequest represents the request to update a feed.
@@ -166,6 +176,7 @@ type FeedModificationRequest struct {
 	IgnoreHTTPCache             *bool   `json:"ignore_http_cache"`
 	AllowSelfSignedCertificates *bool   `json:"allow_self_signed_certificates"`
 	FetchViaProxy               *bool   `json:"fetch_via_proxy"`
+	HideGlobally                *bool   `json:"hide_globally"`
 }
 
 // FeedIcon represents the feed icon.
@@ -173,6 +184,11 @@ type FeedIcon struct {
 	ID       int64  `json:"id"`
 	MimeType string `json:"mime_type"`
 	Data     string `json:"data"`
+}
+
+type FeedCounters struct {
+	ReadCounters   map[int64]int `json:"reads"`
+	UnreadCounters map[int64]int `json:"unreads"`
 }
 
 // Feeds represents a list of feeds.
@@ -187,8 +203,10 @@ type Entry struct {
 	Hash        string     `json:"hash"`
 	Title       string     `json:"title"`
 	URL         string     `json:"url"`
+	CommentsURL string     `json:"comments_url"`
 	Date        time.Time  `json:"published_at"`
 	CreatedAt   time.Time  `json:"created_at"`
+	ChangedAt   time.Time  `json:"changed_at"`
 	Content     string     `json:"content"`
 	Author      string     `json:"author"`
 	ShareCode   string     `json:"share_code"`
@@ -214,6 +232,11 @@ type Enclosure struct {
 // Enclosures represents a list of attachments.
 type Enclosures []*Enclosure
 
+const (
+	FilterNotStarred  = "0"
+	FilterOnlyStarred = "1"
+)
+
 // Filter is used to filter entries.
 type Filter struct {
 	Status        string
@@ -221,7 +244,7 @@ type Filter struct {
 	Limit         int
 	Order         string
 	Direction     string
-	Starred       bool
+	Starred       string
 	Before        int64
 	After         int64
 	BeforeEntryID int64

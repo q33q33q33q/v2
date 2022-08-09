@@ -95,6 +95,8 @@ func (p *Parser) parseLines(lines []string) (err error) {
 			p.opts.databaseMaxConns = parseInt(value, defaultDatabaseMaxConns)
 		case "DATABASE_MIN_CONNS":
 			p.opts.databaseMinConns = parseInt(value, defaultDatabaseMinConns)
+		case "DATABASE_CONNECTION_LIFETIME":
+			p.opts.databaseConnectionLifetime = parseInt(value, defaultDatabaseConnectionLifetime)
 		case "RUN_MIGRATIONS":
 			p.opts.runMigrations = parseBool(value, defaultRunMigrations)
 		case "DISABLE_HSTS":
@@ -117,6 +119,8 @@ func (p *Parser) parseLines(lines []string) (err error) {
 			p.opts.cleanupArchiveReadDays = parseInt(value, defaultCleanupArchiveReadDays)
 		case "CLEANUP_ARCHIVE_UNREAD_DAYS":
 			p.opts.cleanupArchiveUnreadDays = parseInt(value, defaultCleanupArchiveUnreadDays)
+		case "CLEANUP_ARCHIVE_BATCH_SIZE":
+			p.opts.cleanupArchiveBatchSize = parseInt(value, defaultCleanupArchiveBatchSize)
 		case "CLEANUP_REMOVE_SESSIONS_DAYS":
 			p.opts.cleanupRemoveSessionsDays = parseInt(value, defaultCleanupRemoveSessionsDays)
 		case "WORKER_POOL_SIZE":
@@ -189,6 +193,10 @@ func (p *Parser) parseLines(lines []string) (err error) {
 			p.opts.metricsAllowedNetworks = parseStringList(value, []string{defaultMetricsAllowedNetworks})
 		case "FETCH_YOUTUBE_WATCH_TIME":
 			p.opts.fetchYouTubeWatchTime = parseBool(value, defaultFetchYouTubeWatchTime)
+		case "WATCHDOG":
+			p.opts.watchdog = parseBool(value, defaultWatchdog)
+		case "INVIDIOUS_INSTANCE":
+			p.opts.invidiousInstance = parseString(value, defaultInvidiousInstance)
 		}
 	}
 
@@ -209,12 +217,12 @@ func parseBaseURL(value string) (string, string, string, error) {
 
 	url, err := url_parser.Parse(value)
 	if err != nil {
-		return "", "", "", fmt.Errorf("Invalid BASE_URL: %v", err)
+		return "", "", "", fmt.Errorf("config: invalid BASE_URL: %w", err)
 	}
 
 	scheme := strings.ToLower(url.Scheme)
 	if scheme != "https" && scheme != "http" {
-		return "", "", "", errors.New("Invalid BASE_URL: scheme must be http or https")
+		return "", "", "", errors.New("config: invalid BASE_URL: scheme must be http or https")
 	}
 
 	basePath := url.Path

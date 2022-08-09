@@ -1,13 +1,11 @@
 FROM golang:1 AS build
 ADD . /go/src/app
 WORKDIR /go/src/app
-RUN go generate
-RUN go build \
-    -o miniflux \
-    -ldflags="-s -w -X 'miniflux.app/version.Version=`git describe --tags --abbrev=0`' -X 'miniflux.app/version.Commit=`git rev-parse --short HEAD`' -X 'miniflux.app/version.BuildDate=`date +%FT%T%z`'" \
-    main.go
+RUN make miniflux
 
-FROM centos:latest
+FROM centos:8
+RUN dnf --disablerepo '*' --enablerepo=extras swap centos-linux-repos centos-stream-repos -y
+RUN dnf distro-sync -y
 RUN dnf install -y rpm-build
 RUN mkdir -p /root/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 RUN echo "%_topdir /root/rpmbuild" >> .rpmmacros

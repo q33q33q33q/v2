@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.4'
 services:
   traefik:
     image: "traefik:v2.3"
@@ -18,11 +18,10 @@ services:
       - "./letsencrypt:/letsencrypt"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
   miniflux:
-    image: miniflux/miniflux:latest
+    image: ${MINIFLUX_IMAGE:-miniflux/miniflux:latest}
     container_name: miniflux
     depends_on:
-      db:
-        condition: service_healthy
+      - db
     expose:
       - "8080"
     environment:

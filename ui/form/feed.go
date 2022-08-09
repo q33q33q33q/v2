@@ -20,6 +20,7 @@ type FeedForm struct {
 	RewriteRules                string
 	BlocklistRules              string
 	KeeplistRules               string
+	UrlRewriteRules             string
 	Crawler                     bool
 	UserAgent                   string
 	Cookie                      string
@@ -30,6 +31,8 @@ type FeedForm struct {
 	AllowSelfSignedCertificates bool
 	FetchViaProxy               bool
 	Disabled                    bool
+	HideGlobally                bool
+	CategoryHidden              bool // Category has "hide_globally"
 }
 
 // Merge updates the fields of the given feed.
@@ -42,6 +45,7 @@ func (f FeedForm) Merge(feed *model.Feed) *model.Feed {
 	feed.RewriteRules = f.RewriteRules
 	feed.BlocklistRules = f.BlocklistRules
 	feed.KeeplistRules = f.KeeplistRules
+	feed.UrlRewriteRules = f.UrlRewriteRules
 	feed.Crawler = f.Crawler
 	feed.UserAgent = f.UserAgent
 	feed.Cookie = f.Cookie
@@ -53,6 +57,7 @@ func (f FeedForm) Merge(feed *model.Feed) *model.Feed {
 	feed.AllowSelfSignedCertificates = f.AllowSelfSignedCertificates
 	feed.FetchViaProxy = f.FetchViaProxy
 	feed.Disabled = f.Disabled
+	feed.HideGlobally = f.HideGlobally
 	return feed
 }
 
@@ -72,6 +77,7 @@ func NewFeedForm(r *http.Request) *FeedForm {
 		RewriteRules:                r.FormValue("rewrite_rules"),
 		BlocklistRules:              r.FormValue("blocklist_rules"),
 		KeeplistRules:               r.FormValue("keeplist_rules"),
+		UrlRewriteRules:             r.FormValue("urlrewrite_rules"),
 		Crawler:                     r.FormValue("crawler") == "1",
 		CategoryID:                  int64(categoryID),
 		Username:                    r.FormValue("feed_username"),
@@ -80,5 +86,6 @@ func NewFeedForm(r *http.Request) *FeedForm {
 		AllowSelfSignedCertificates: r.FormValue("allow_self_signed_certificates") == "1",
 		FetchViaProxy:               r.FormValue("fetch_via_proxy") == "1",
 		Disabled:                    r.FormValue("disabled") == "1",
+		HideGlobally:                r.FormValue("hide_globally") == "1",
 	}
 }

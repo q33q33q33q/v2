@@ -49,6 +49,7 @@ func (s *Storage) CountAllEntries() map[string]int64 {
 func (s *Storage) CountUnreadEntries(userID int64) int {
 	builder := s.NewEntryQueryBuilder(userID)
 	builder.WithStatus(model.EntryStatusUnread)
+	builder.WithGloballyVisible()
 
 	n, err := builder.CountEntries()
 	if err != nil {
@@ -299,8 +300,8 @@ func (s *Storage) RefreshFeedEntries(userID, feedID int64, entries model.Entries
 }
 
 // ArchiveEntries changes the status of entries to "removed" after the given number of days.
-func (s *Storage) ArchiveEntries(status string, days int) (int64, error) {
-	if days < 0 {
+func (s *Storage) ArchiveEntries(status string, days, limit int) (int64, error) {
+	if days < 0 || limit <= 0 {
 		return 0, nil
 	}
 
@@ -310,10 +311,10 @@ func (s *Storage) ArchiveEntries(status string, days int) (int64, error) {
 		SET
 			status='removed'
 		WHERE
-			id=ANY(SELECT id FROM entries WHERE status=$1 AND starred is false AND share_code='' AND created_at < now () - '%d days'::interval ORDER BY created_at ASC LIMIT 5000)
+			id=ANY(SELECT id FROM entries WHERE status=$1 AND starred is false AND share_code='' AND created_at < now () - '%d days'::interval ORDER BY created_at ASC LIMIT %d)
 	`
 
-	result, err := s.db.Exec(fmt.Sprintf(query, days), status)
+	result, err := s.db.Exec(fmt.Sprintf(query, days, limit), status)
 	if err != nil {
 		return 0, fmt.Errorf(`store: unable to archive %s entries: %v`, status, err)
 	}
@@ -332,6 +333,50 @@ func (s *Storage) SetEntriesStatus(userID int64, entryIDs []int64, status string
 	result, err := s.db.Exec(query, status, userID, pq.Array(entryIDs))
 	if err != nil {
 		return fmt.Errorf(`store: unable to update entries statuses %v: %v`, entryIDs, err)
+	}
+
+	count, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf(`store: unable to update these entries %v: %v`, entryIDs, err)
+	}
+
+	if count == 0 {
+		return errors.New(`store: nothing has been updated`)
+	}
+
+	return nil
+}
+
+func (s *Storage) SetEntriesStatusCount(userID int64, entryIDs []int64, status string) (int, error) {
+	if err := s.SetEntriesStatus(userID, entryIDs, status); err != nil {
+		return 0, err
+	}
+
+	query := `
+		SELECT count(*)
+		FROM entries e
+		    JOIN feeds f ON (f.id = e.feed_id)
+		    JOIN categories c ON (c.id = f.category_id)
+		WHERE e.user_id = $1
+			AND e.id = ANY($2)
+			AND NOT f.hide_globally
+			AND NOT c.hide_globally
+	`
+	row := s.db.QueryRow(query, userID, pq.Array(entryIDs))
+	visible := 0
+	if err := row.Scan(&visible); err != nil {
+		return 0, fmt.Errorf(`store: unable to query entries visibility %v: %v`, entryIDs, err)
+	}
+
+	return visible, nil
+}
+
+// SetEntriesBookmarked update the bookmarked state for the given list of entries.
+func (s *Storage) SetEntriesBookmarkedState(userID int64, entryIDs []int64, starred bool) error {
+	query := `UPDATE entries SET starred=$1, changed_at=now() WHERE user_id=$2 AND id=ANY($3)`
+	result, err := s.db.Exec(query, starred, userID, pq.Array(entryIDs))
+	if err != nil {
+		return fmt.Errorf(`store: unable to update the bookmarked state %v: %v`, entryIDs, err)
 	}
 
 	count, err := result.RowsAffected()

@@ -1,6 +1,6 @@
 {{ define "base" }}
 <!DOCTYPE html>
-<html>
+<html lang="{{ replace .language "_" "-"}}">
 <head>
     <meta charset="utf-8">
     <title>{{template "title" .}} - Miniflux</title>
@@ -29,20 +29,25 @@
     <link rel="apple-touch-icon" sizes="167x167" href="{{ route "appIcon" "filename" "icon-167.png" }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ route "appIcon" "filename" "icon-180.png" }}">
 
-    {{ if .csrf }}
-        <meta name="X-CSRF-Token" value="{{ .csrf }}">
-    {{ end }}
+    <meta name="theme-color" content="{{ theme_color .theme "light" }}" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="{{ theme_color .theme "dark" }}" media="(prefers-color-scheme: dark)">
 
-    <meta name="theme-color" content="{{ theme_color .theme }}">
-    <link rel="stylesheet" type="text/css" href="{{ route "stylesheet" "name" .theme }}?{{ .theme_checksum }}">
+    <link rel="stylesheet" type="text/css" href="{{ route "stylesheet" "name" .theme "checksum" .theme_checksum }}">
+
     {{ if and .user .user.Stylesheet }}
-    <link rel="stylesheet" type="text/css" href="{{ route "stylesheet" "name" "custom_css" }}">
+    {{ $stylesheetNonce := nonce }}
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data:; media-src *; frame-src *; style-src 'self' 'nonce-{{ $stylesheetNonce }}'">
+    <style nonce="{{ $stylesheetNonce }}">{{ .user.Stylesheet | safeCSS }}</style>
+    {{ else }}
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data:; media-src *; frame-src *">
     {{ end }}
 
-    <script type="text/javascript" src="{{ route "javascript" "name" "app" }}?{{ .app_js_checksum }}" defer></script>
-    <script type="text/javascript" src="{{ route "javascript" "name" "service-worker" }}?{{ .sw_js_checksum }}" defer id="service-worker-script"></script>
+    <script src="{{ route "javascript" "name" "app" "checksum" .app_js_checksum }}" defer></script>
+    <script src="{{ route "javascript" "name" "service-worker" "checksum" .sw_js_checksum }}" defer id="service-worker-script"></script>
 </head>
 <body
+    {{ if .csrf }}data-csrf-token="{{ .csrf }}"{{ end }}
+    data-add-subscription-url="{{ route "addSubscription" }}"
     data-entries-status-url="{{ route "updateEntriesStatus" }}"
     data-refresh-all-feeds-url="{{ route "refreshAllFeeds" }}"
     {{ if .user }}{{ if not .user.KeyboardShortcuts }}data-disable-keyboard-shortcuts="true"{{ end }}{{ end }}>
@@ -51,7 +56,7 @@
     <header class="header">
         <nav>
             <div class="logo">
-                <a href="{{ route "unread" }}">Mini<span>flux</span></a>
+                <a href="{{ route .user.DefaultHomePage }}">Mini<span>flux</span></a>
             </div>
             <ul>
                 <li {{ if eq .menu "unread" }}class="active"{{ end }} title="{{ t "tooltip.keyboard_shortcuts" "g u" }}">
@@ -73,6 +78,9 @@
                           <span class="error-feeds-counter-wrapper">(<span class="error-feeds-counter">{{ .countErrorFeeds }}</span>)</span>
                       {{ end }}
                     </a>
+                    <a href="{{ route "addSubscription" }}" title="{{ t "tooltip.keyboard_shortcuts" "+" }}">
+                        (+)
+                    </a>
                 </li>
                 <li {{ if eq .menu "categories" }}class="active"{{ end }} title="{{ t "tooltip.keyboard_shortcuts" "g c" }}">
                     <a href="{{ route "categories" }}" data-page="categories">{{ t "menu.categories" }}</a>
@@ -80,9 +88,11 @@
                 <li {{ if eq .menu "settings" }}class="active"{{ end }} title="{{ t "tooltip.keyboard_shortcuts" "g s" }}">
                     <a href="{{ route "settings" }}" data-page="settings">{{ t "menu.settings" }}</a>
                 </li>
-                <li>
-                    <a href="{{ route "logout" }}" title="{{ t "tooltip.logged_user" .user.Username }}">{{ t "menu.logout" }}</a>
-                </li>
+                {{ if not hasAuthProxy }}
+                    <li>
+                        <a href="{{ route "logout" }}" title="{{ t "tooltip.logged_user" .user.Username }}">{{ t "menu.logout" }}</a>
+                    </li>
+                {{ end }}
             </ul>
             <div class="search">
                 <div class="search-toggle-switch {{ if $.searchQuery }}has-search-query{{ end }}">
@@ -119,6 +129,7 @@
                     <li>{{ t "page.keyboard_shortcuts.go_to_categories" }} = <strong>g + c</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.go_to_settings" }} = <strong>g + s</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.show_keyboard_shortcuts" }} = <strong>?</strong></li>
+                    <li>{{ t "menu.add_feed" }} = <strong>+</strong></li>
                 </ul>
 
                 <p>{{ t "page.keyboard_shortcuts.subtitle.items" }}</p>
@@ -141,7 +152,8 @@
                     <li>{{ t "page.keyboard_shortcuts.open_original_same_window" }} = <strong>V</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.open_comments" }} = <strong>c</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.open_comments_same_window" }} = <strong>C</strong></li>
-                    <li>{{ t "page.keyboard_shortcuts.toggle_read_status" }} = <strong>m</strong></li>
+                    <li>{{ t "page.keyboard_shortcuts.toggle_read_status_next" }} = <strong>m</strong></li>
+                    <li>{{ t "page.keyboard_shortcuts.toggle_read_status_prev" }} = <strong>M</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.mark_page_as_read" }} = <strong>A</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.download_content" }} = <strong>d</strong></li>
                     <li>{{ t "page.keyboard_shortcuts.toggle_bookmark_status" }} = <strong>f</strong></li>

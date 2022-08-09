@@ -34,6 +34,7 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 	offset := request.QueryIntParam(r, "offset", 0)
 	builder := h.store.NewEntryQueryBuilder(user.ID)
 	builder.WithStatus(model.EntryStatusUnread)
+	builder.WithGloballyVisible()
 	countUnread, err := builder.CountEntries()
 	if err != nil {
 		html.ServerError(w, r, err)
@@ -48,10 +49,11 @@ func (h *handler) showUnreadPage(w http.ResponseWriter, r *http.Request) {
 	m = timing.NewMetric("sql_fetch_unread_entries").Start()
 	builder = h.store.NewEntryQueryBuilder(user.ID)
 	builder.WithStatus(model.EntryStatusUnread)
-	builder.WithOrder(model.DefaultSortingOrder)
+	builder.WithOrder(user.EntryOrder)
 	builder.WithDirection(user.EntryDirection)
 	builder.WithOffset(offset)
 	builder.WithLimit(user.EntriesPerPage)
+	builder.WithGloballyVisible()
 	entries, err := builder.GetEntries()
 	if err != nil {
 		html.ServerError(w, r, err)

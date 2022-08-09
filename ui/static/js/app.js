@@ -12,6 +12,19 @@ function onClick(selector, callback, noPreventDefault) {
     });
 }
 
+function onAuxClick(selector, callback, noPreventDefault) {
+    let elements = document.querySelectorAll(selector);
+    elements.forEach((element) => {
+        element.onauxclick = (event) => {
+            if (!noPreventDefault) {
+                event.preventDefault();
+            }
+
+            callback(event);
+        };
+    });
+}
+
 // Show and hide the main menu on mobile devices.
 function toggleMainMenu() {
     let menu = document.querySelector(".header nav ul");
@@ -114,14 +127,29 @@ function markPageAsRead() {
     }
 }
 
-// Handle entry status changes from the list view and entry view.
-function handleEntryStatus(element) {
+/**
+ * Handle entry status changes from the list view and entry view.
+ * Focus the next or the previous entry if it exists.
+ * @param {string} item Item to focus: "previous" or "next".
+ * @param {Element} element
+ * @param {boolean} setToRead
+ */
+function handleEntryStatus(item, element, setToRead) {
     let toasting = !element;
     let currentEntry = findEntry(element);
     if (currentEntry) {
-        toggleEntryStatus(currentEntry, toasting);
+        if (!setToRead || currentEntry.querySelector("a[data-toggle-status]").dataset.value == "unread") {
+            toggleEntryStatus(currentEntry, toasting);
+        }
         if (isListView() && currentEntry.classList.contains('current-item')) {
-            goToNextListItem();
+            switch (item) {
+                case "previous":
+                    goToListItem(-1);
+                    break;
+                case "next":
+                    goToListItem(1);
+                    break;
+            }
         }
     }
 }
@@ -134,31 +162,32 @@ function toggleEntryStatus(element, toasting) {
     let currentStatus = link.dataset.value;
     let newStatus = currentStatus === "read" ? "unread" : "read";
 
-    updateEntriesStatus([entryID], newStatus);
+    link.querySelector("span").innerHTML = link.dataset.labelLoading;
+    updateEntriesStatus([entryID], newStatus, () => {
+        let iconElement, label;
 
-    let iconElement, label;
-
-    if (currentStatus === "read") {
-        iconElement = document.querySelector("template#icon-read");
-        label = link.dataset.labelRead;
-        if (toasting) {
-            showToast(link.dataset.toastUnread, iconElement);
+        if (currentStatus === "read") {
+            iconElement = document.querySelector("template#icon-read");
+            label = link.dataset.labelRead;
+            if (toasting) {
+                showToast(link.dataset.toastUnread, iconElement);
+            }
+        } else {
+            iconElement = document.querySelector("template#icon-unread");
+            label = link.dataset.labelUnread;
+            if (toasting) {
+                showToast(link.dataset.toastRead, iconElement);
+            }
         }
-    } else {
-        iconElement = document.querySelector("template#icon-unread");
-        label = link.dataset.labelUnread;
-        if (toasting) {
-            showToast(link.dataset.toastRead, iconElement);
+
+        link.innerHTML = iconElement.innerHTML + '<span class="icon-label">' + label + '</span>';
+        link.dataset.value = newStatus;
+
+        if (element.classList.contains("item-status-" + currentStatus)) {
+            element.classList.remove("item-status-" + currentStatus);
+            element.classList.add("item-status-" + newStatus);
         }
-    }
-
-    link.innerHTML = iconElement.innerHTML + '<span class="icon-label">' + label + '</span>';
-    link.dataset.value = newStatus;
-
-    if (element.classList.contains("item-status-" + currentStatus)) {
-        element.classList.remove("item-status-" + currentStatus);
-        element.classList.add("item-status-" + newStatus);
-    }
+    });
 }
 
 // Mark a single entry as read.
@@ -190,14 +219,20 @@ function updateEntriesStatus(entryIDs, status, callback) {
     let url = document.body.dataset.entriesStatusUrl;
     let request = new RequestBuilder(url);
     request.withBody({entry_ids: entryIDs, status: status});
-    request.withCallback(callback);
-    request.execute();
+    request.withCallback((resp) => {
+        resp.json().then(count => {
+        if (callback) {
+            callback(resp);
+        }
 
-    if (status === "read") {
-        decrementUnreadCounter(1);
-    } else {
-        incrementUnreadCounter(1);
-    }
+            if (status === "read") {
+                decrementUnreadCounter(count);
+            } else {
+                incrementUnreadCounter(count);
+            }
+        });
+    });
+    request.execute();
 }
 
 // Handle save entry from list view and entry view.
@@ -325,7 +360,7 @@ function openOriginalLink(openLinkInCurrentTab) {
         let currentItem = document.querySelector(".current-item");
         // If we are not on the list of starred items, move to the next item
         if (document.location.href != document.querySelector('a[data-page=starred]').href) {
-            goToNextListItem();
+            goToListItem(1);
         }
         markEntryAsRead(currentItem);
     }
@@ -390,7 +425,7 @@ function goToPage(page, fallbackSelf) {
 
 function goToPrevious() {
     if (isListView()) {
-        goToPreviousListItem();
+        goToListItem(-1);
     } else {
         goToPage("previous");
     }
@@ -398,7 +433,7 @@ function goToPrevious() {
 
 function goToNext() {
     if (isListView()) {
-        goToNextListItem();
+        goToListItem(1);
     } else {
         goToPage("next");
     }
@@ -426,7 +461,10 @@ function goToFeed() {
     }
 }
 
-function goToPreviousListItem() {
+/**
+ * @param {number} offset How many items to jump for focus.
+ */
+function goToListItem(offset) {
     let items = DomHelper.getVisibleElements(".items .item");
     if (items.length === 0) {
         return;
@@ -442,48 +480,11 @@ function goToPreviousListItem() {
         if (items[i].classList.contains("current-item")) {
             items[i].classList.remove("current-item");
 
-            let nextItem;
-            if (i - 1 >= 0) {
-                nextItem = items[i - 1];
-            } else {
-                nextItem = items[items.length - 1];
-            }
+            let item = items[(i + offset + items.length) % items.length];
 
-            nextItem.classList.add("current-item");
-            DomHelper.scrollPageTo(nextItem);
-            nextItem.querySelector('.item-header a').focus();
-
-            break;
-        }
-    }
-}
-
-function goToNextListItem() {
-    let items = DomHelper.getVisibleElements(".items .item");
-    if (items.length === 0) {
-        return;
-    }
-
-    if (document.querySelector(".current-item") === null) {
-        items[0].classList.add("current-item");
-        items[0].querySelector('.item-header a').focus();
-        return;
-    }
-
-    for (let i = 0; i < items.length; i++) {
-        if (items[i].classList.contains("current-item")) {
-            items[i].classList.remove("current-item");
-
-            let nextItem;
-            if (i + 1 < items.length) {
-                nextItem = items[i + 1];
-            } else {
-                nextItem = items[0];
-            }
-
-            nextItem.classList.add("current-item");
-            DomHelper.scrollPageTo(nextItem);
-            nextItem.querySelector('.item-header a').focus();
+            item.classList.add("current-item");
+            DomHelper.scrollPageTo(item);
+            item.querySelector('.item-header a').focus();
 
             break;
         }
@@ -610,4 +611,9 @@ function showToast(label, iconElement) {
             }, 100);
         }
     }
+}
+
+/** Navigate to the new subscription page. */
+function goToAddSubscription() {
+    window.location.href = document.body.dataset.addSubscriptionUrl;
 }

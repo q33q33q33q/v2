@@ -15,6 +15,36 @@ func TestValidInput(t *testing.T) {
 	}
 }
 
+func TestImgWithWidthAndHeightAttribute(t *testing.T) {
+	input := `<img src="https://example.org/image.png" width="10" height="20">`
+	expected := `<img src="https://example.org/image.png" width="10" height="20" loading="lazy">`
+	output := Sanitize("http://example.org/", input)
+
+	if output != expected {
+		t.Errorf(`Wrong output: %s`, output)
+	}
+}
+
+func TestImgWithWidthAndHeightAttributeLargerThanMinifluxLayout(t *testing.T) {
+	input := `<img src="https://example.org/image.png" width="1200" height="675">`
+	expected := `<img src="https://example.org/image.png" loading="lazy">`
+	output := Sanitize("http://example.org/", input)
+
+	if output != expected {
+		t.Errorf(`Wrong output: %s`, output)
+	}
+}
+
+func TestImgWithIncorrectWidthAndHeightAttribute(t *testing.T) {
+	input := `<img src="https://example.org/image.png" width="10px" height="20px">`
+	expected := `<img src="https://example.org/image.png" loading="lazy">`
+	output := Sanitize("http://example.org/", input)
+
+	if output != expected {
+		t.Errorf(`Wrong output: %s`, output)
+	}
+}
+
 func TestImgWithTextDataURL(t *testing.T) {
 	input := `<img src="data:text/plain;base64,SGVsbG8sIFdvcmxkIQ==" alt="Example">`
 	expected := ``
@@ -38,16 +68,6 @@ func TestImgWithDataURL(t *testing.T) {
 func TestImgWithSrcset(t *testing.T) {
 	input := `<img srcset="example-320w.jpg, example-480w.jpg 1.5x,   example-640w.jpg 2x, example-640w.jpg 640w" src="example-640w.jpg" alt="Example">`
 	expected := `<img srcset="http://example.org/example-320w.jpg, http://example.org/example-480w.jpg 1.5x, http://example.org/example-640w.jpg 2x, http://example.org/example-640w.jpg 640w" src="http://example.org/example-640w.jpg" alt="Example" loading="lazy">`
-	output := Sanitize("http://example.org/", input)
-
-	if output != expected {
-		t.Errorf(`Wrong output: %s`, output)
-	}
-}
-
-func TestImgWithSrcsetAndDataURL(t *testing.T) {
-	input := `<img srcset="data:image/gif;base64,test" src="http://example.org/example-320w.jpg" alt="Example">`
-	expected := `<img srcset="data:image/gif;base64,test" src="http://example.org/example-320w.jpg" alt="Example" loading="lazy">`
 	output := Sanitize("http://example.org/", input)
 
 	if output != expected {

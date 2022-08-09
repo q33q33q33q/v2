@@ -20,6 +20,7 @@
             <a href="#"
                 title="{{ t "entry.status.title" }}"
                 data-toggle-status="true"
+                data-label-loading="{{ t "entry.state.saving" }}"
                 data-label-read="{{ t "entry.status.read" }}"
                 data-label-unread="{{ t "entry.status.unread" }}"
                 data-value="{{ if eq .entry.Status "read" }}read{{ else }}unread{{ end }}"
@@ -40,6 +41,15 @@
                 <a href="{{ route "sharedEntry" "shareCode" .entry.ShareCode }}"
                     title="{{ t "entry.shared_entry.title" }}"
                     target="_blank">{{ icon "share" }}<span class="icon-label">{{ t "entry.shared_entry.label" }}</span></a>
+            </li>
+            <li>
+                <a href="#"
+                    data-confirm="true"
+                    data-url="{{ route "unshareEntry" "entryID" .entry.ID }}"
+                    data-label-question="{{ t "confirm.question" }}"
+                    data-label-yes="{{ t "confirm.yes" }}"
+                    data-label-no="{{ t "confirm.no" }}"
+                    data-label-loading="{{ t "confirm.loading" }}">{{ icon "delete" }}<span class="icon-label">{{ t "entry.unshare.label" }}</span></a>
             </li>
         {{ end }}
         {{ if .hasSaveEntry }}

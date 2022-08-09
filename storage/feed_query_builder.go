@@ -157,6 +157,7 @@ func (f *FeedQueryBuilder) GetFeeds() (model.Feeds, error) {
 			f.rewrite_rules,
 			f.blocklist_rules,
 			f.keeplist_rules,
+			f.url_rewrite_rules,
 			f.crawler,
 			f.user_agent,
 			f.cookie,
@@ -166,8 +167,10 @@ func (f *FeedQueryBuilder) GetFeeds() (model.Feeds, error) {
 			f.allow_self_signed_certificates,
 			f.fetch_via_proxy,
 			f.disabled,
+			f.hide_globally,
 			f.category_id,
 			c.title as category_title,
+			c.hide_globally as category_hidden,
 			fi.icon_id,
 			u.timezone
 		FROM
@@ -217,6 +220,7 @@ func (f *FeedQueryBuilder) GetFeeds() (model.Feeds, error) {
 			&feed.RewriteRules,
 			&feed.BlocklistRules,
 			&feed.KeeplistRules,
+			&feed.UrlRewriteRules,
 			&feed.Crawler,
 			&feed.UserAgent,
 			&feed.Cookie,
@@ -226,8 +230,10 @@ func (f *FeedQueryBuilder) GetFeeds() (model.Feeds, error) {
 			&feed.AllowSelfSignedCertificates,
 			&feed.FetchViaProxy,
 			&feed.Disabled,
+			&feed.HideGlobally,
 			&feed.Category.ID,
 			&feed.Category.Title,
+			&feed.Category.HideGlobally,
 			&iconID,
 			&tz,
 		)

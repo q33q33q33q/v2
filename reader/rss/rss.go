@@ -53,7 +53,7 @@ func (r *rssFeed) Transform(baseURL string) *model.Feed {
 		feed.FeedURL = feedURL
 	}
 
-	feed.Title = strings.TrimSpace(r.Title)
+	feed.Title = html.UnescapeString(strings.TrimSpace(r.Title))
 	if feed.Title == "" {
 		feed.Title = feed.SiteURL
 	}
@@ -71,6 +71,10 @@ func (r *rssFeed) Transform(baseURL string) *model.Feed {
 			if err == nil {
 				entry.URL = entryURL
 			}
+		}
+
+		if entry.Title == "" {
+			entry.Title = sanitizer.TruncateHTML(entry.Content, 100)
 		}
 
 		if entry.Title == "" {

@@ -12,16 +12,18 @@ import (
 	"miniflux.app/logger"
 	"miniflux.app/model"
 	"miniflux.app/reader/date"
+	"miniflux.app/reader/sanitizer"
 	"miniflux.app/url"
 )
 
 type jsonFeed struct {
-	Version string     `json:"version"`
-	Title   string     `json:"title"`
-	SiteURL string     `json:"home_page_url"`
-	FeedURL string     `json:"feed_url"`
-	Author  jsonAuthor `json:"author"`
-	Items   []jsonItem `json:"items"`
+	Version string       `json:"version"`
+	Title   string       `json:"title"`
+	SiteURL string       `json:"home_page_url"`
+	FeedURL string       `json:"feed_url"`
+	Authors []jsonAuthor `json:"authors"`
+	Author  jsonAuthor   `json:"author"`
+	Items   []jsonItem   `json:"items"`
 }
 
 type jsonAuthor struct {
@@ -38,6 +40,7 @@ type jsonItem struct {
 	HTML          string           `json:"content_html"`
 	DatePublished string           `json:"date_published"`
 	DateModified  string           `json:"date_modified"`
+	Authors       []jsonAuthor     `json:"authors"`
 	Author        jsonAuthor       `json:"author"`
 	Attachments   []jsonAttachment `json:"attachments"`
 }
@@ -51,6 +54,9 @@ type jsonAttachment struct {
 }
 
 func (j *jsonFeed) GetAuthor() string {
+	if len(j.Authors) > 0 {
+		return (getAuthor(j.Authors[0]))
+	}
 	return getAuthor(j.Author)
 }
 
@@ -108,6 +114,9 @@ func (j *jsonItem) GetDate() time.Time {
 }
 
 func (j *jsonItem) GetAuthor() string {
+	if len(j.Authors) > 0 {
+		return getAuthor(j.Authors[0])
+	}
 	return getAuthor(j.Author)
 }
 
@@ -122,9 +131,13 @@ func (j *jsonItem) GetHash() string {
 }
 
 func (j *jsonItem) GetTitle() string {
-	for _, value := range []string{j.Title, j.Summary, j.Text, j.URL} {
+	if j.Title != "" {
+		return j.Title
+	}
+
+	for _, value := range []string{j.Summary, j.Text, j.HTML} {
 		if value != "" {
-			return truncate(value)
+			return sanitizer.TruncateHTML(value, 100)
 		}
 	}
 
@@ -177,14 +190,4 @@ func getAuthor(author jsonAuthor) string {
 	}
 
 	return ""
-}
-
-func truncate(str string) string {
-	max := 100
-	str = strings.TrimSpace(str)
-	if len(str) > max {
-		return str[:max] + "..."
-	}
-
-	return str
 }

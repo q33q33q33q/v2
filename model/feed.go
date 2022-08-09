@@ -40,6 +40,7 @@ type Feed struct {
 	Crawler                     bool      `json:"crawler"`
 	BlocklistRules              string    `json:"blocklist_rules"`
 	KeeplistRules               string    `json:"keeplist_rules"`
+	UrlRewriteRules             string    `json:"urlrewrite_rules"`
 	UserAgent                   string    `json:"user_agent"`
 	Cookie                      string    `json:"cookie"`
 	Username                    string    `json:"username"`
@@ -51,8 +52,14 @@ type Feed struct {
 	Category                    *Category `json:"category,omitempty"`
 	Entries                     Entries   `json:"entries,omitempty"`
 	Icon                        *FeedIcon `json:"icon"`
+	HideGlobally                bool      `json:"hide_globally"`
 	UnreadCount                 int       `json:"-"`
 	ReadCount                   int       `json:"-"`
+}
+
+type FeedCounters struct {
+	ReadCounters   map[int64]int `json:"reads"`
+	UnreadCounters map[int64]int `json:"unreads"`
 }
 
 func (f *Feed) String() string {
@@ -134,6 +141,8 @@ type FeedCreationRequest struct {
 	RewriteRules                string `json:"rewrite_rules"`
 	BlocklistRules              string `json:"blocklist_rules"`
 	KeeplistRules               string `json:"keeplist_rules"`
+	HideGlobally                bool   `json:"hide_globally"`
+	UrlRewriteRules             string `json:"urlrewrite_rules"`
 }
 
 // FeedModificationRequest represents the request to update a feed.
@@ -145,6 +154,7 @@ type FeedModificationRequest struct {
 	RewriteRules                *string `json:"rewrite_rules"`
 	BlocklistRules              *string `json:"blocklist_rules"`
 	KeeplistRules               *string `json:"keeplist_rules"`
+	UrlRewriteRules             *string `json:"urlrewrite_rules"`
 	Crawler                     *bool   `json:"crawler"`
 	UserAgent                   *string `json:"user_agent"`
 	Cookie                      *string `json:"cookie"`
@@ -155,6 +165,7 @@ type FeedModificationRequest struct {
 	IgnoreHTTPCache             *bool   `json:"ignore_http_cache"`
 	AllowSelfSignedCertificates *bool   `json:"allow_self_signed_certificates"`
 	FetchViaProxy               *bool   `json:"fetch_via_proxy"`
+	HideGlobally                *bool   `json:"hide_globally"`
 }
 
 // Patch updates a feed with modified values.
@@ -181,6 +192,10 @@ func (f *FeedModificationRequest) Patch(feed *Feed) {
 
 	if f.KeeplistRules != nil {
 		feed.KeeplistRules = *f.KeeplistRules
+	}
+
+	if f.UrlRewriteRules != nil {
+		feed.UrlRewriteRules = *f.UrlRewriteRules
 	}
 
 	if f.BlocklistRules != nil {
@@ -225,6 +240,10 @@ func (f *FeedModificationRequest) Patch(feed *Feed) {
 
 	if f.FetchViaProxy != nil {
 		feed.FetchViaProxy = *f.FetchViaProxy
+	}
+
+	if f.HideGlobally != nil {
+		feed.HideGlobally = *f.HideGlobally
 	}
 }
 

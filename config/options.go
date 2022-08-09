@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"miniflux.app/version"
 )
@@ -25,7 +26,7 @@ const (
 	defaultBasePath                           = ""
 	defaultWorkerPoolSize                     = 5
 	defaultPollingFrequency                   = 60
-	defaultBatchSize                          = 10
+	defaultBatchSize                          = 100
 	defaultPollingScheduler                   = "round_robin"
 	defaultSchedulerEntryFrequencyMinInterval = 5
 	defaultSchedulerEntryFrequencyMaxInterval = 24 * 60
@@ -34,6 +35,7 @@ const (
 	defaultDatabaseURL                        = "user=postgres password=postgres dbname=miniflux2 sslmode=disable"
 	defaultDatabaseMaxConns                   = 20
 	defaultDatabaseMinConns                   = 1
+	defaultDatabaseConnectionLifetime         = 5
 	defaultListenAddr                         = "127.0.0.1:8080"
 	defaultCertFile                           = ""
 	defaultKeyFile                            = ""
@@ -41,6 +43,7 @@ const (
 	defaultCleanupFrequencyHours              = 24
 	defaultCleanupArchiveReadDays             = 60
 	defaultCleanupArchiveUnreadDays           = 180
+	defaultCleanupArchiveBatchSize            = 10000
 	defaultCleanupRemoveSessionsDays          = 30
 	defaultProxyImages                        = "http-only"
 	defaultFetchYouTubeWatchTime              = false
@@ -64,6 +67,8 @@ const (
 	defaultMetricsCollector                   = false
 	defaultMetricsRefreshInterval             = 60
 	defaultMetricsAllowedNetworks             = "127.0.0.1/8"
+	defaultWatchdog                           = true
+	defaultInvidiousInstance                  = "yewtu.be"
 )
 
 var defaultHTTPClientUserAgent = "Mozilla/5.0 (compatible; Miniflux/" + version.Version + "; +https://miniflux.app)"
@@ -89,6 +94,7 @@ type Options struct {
 	databaseURL                        string
 	databaseMaxConns                   int
 	databaseMinConns                   int
+	databaseConnectionLifetime         int
 	runMigrations                      bool
 	listenAddr                         string
 	certFile                           string
@@ -97,6 +103,7 @@ type Options struct {
 	cleanupFrequencyHours              int
 	cleanupArchiveReadDays             int
 	cleanupArchiveUnreadDays           int
+	cleanupArchiveBatchSize            int
 	cleanupRemoveSessionsDays          int
 	pollingFrequency                   int
 	batchSize                          int
@@ -128,6 +135,8 @@ type Options struct {
 	metricsCollector                   bool
 	metricsRefreshInterval             int
 	metricsAllowedNetworks             []string
+	watchdog                           bool
+	invidiousInstance                  string
 }
 
 // NewOptions returns Options with default values.
@@ -146,6 +155,7 @@ func NewOptions() *Options {
 		databaseURL:                        defaultDatabaseURL,
 		databaseMaxConns:                   defaultDatabaseMaxConns,
 		databaseMinConns:                   defaultDatabaseMinConns,
+		databaseConnectionLifetime:         defaultDatabaseConnectionLifetime,
 		runMigrations:                      defaultRunMigrations,
 		listenAddr:                         defaultListenAddr,
 		certFile:                           defaultCertFile,
@@ -154,6 +164,7 @@ func NewOptions() *Options {
 		cleanupFrequencyHours:              defaultCleanupFrequencyHours,
 		cleanupArchiveReadDays:             defaultCleanupArchiveReadDays,
 		cleanupArchiveUnreadDays:           defaultCleanupArchiveUnreadDays,
+		cleanupArchiveBatchSize:            defaultCleanupArchiveBatchSize,
 		cleanupRemoveSessionsDays:          defaultCleanupRemoveSessionsDays,
 		pollingFrequency:                   defaultPollingFrequency,
 		batchSize:                          defaultBatchSize,
@@ -183,6 +194,8 @@ func NewOptions() *Options {
 		metricsCollector:                   defaultMetricsCollector,
 		metricsRefreshInterval:             defaultMetricsRefreshInterval,
 		metricsAllowedNetworks:             []string{defaultMetricsAllowedNetworks},
+		watchdog:                           defaultWatchdog,
+		invidiousInstance:                  defaultInvidiousInstance,
 	}
 }
 
@@ -246,6 +259,11 @@ func (o *Options) DatabaseMinConns() int {
 	return o.databaseMinConns
 }
 
+// DatabaseConnectionLifetime returns the maximum amount of time a connection may be reused.
+func (o *Options) DatabaseConnectionLifetime() time.Duration {
+	return time.Duration(o.databaseConnectionLifetime) * time.Minute
+}
+
 // ListenAddr returns the listen address for the HTTP server.
 func (o *Options) ListenAddr() string {
 	return o.listenAddr
@@ -279,6 +297,11 @@ func (o *Options) CleanupArchiveReadDays() int {
 // CleanupArchiveUnreadDays returns the number of days after which marking unread items as removed.
 func (o *Options) CleanupArchiveUnreadDays() int {
 	return o.cleanupArchiveUnreadDays
+}
+
+// CleanupArchiveBatchSize returns the number of entries to archive for each interval.
+func (o *Options) CleanupArchiveBatchSize() int {
+	return o.cleanupArchiveBatchSize
 }
 
 // CleanupRemoveSessionsDays returns the number of days after which to remove sessions.
@@ -457,10 +480,20 @@ func (o *Options) HTTPClientUserAgent() string {
 	return o.httpClientUserAgent
 }
 
+// HasWatchdog returns true if the systemd watchdog is enabled.
+func (o *Options) HasWatchdog() bool {
+	return o.watchdog
+}
+
+// InvidiousInstance returns the invidious instance used by miniflux
+func (o *Options) InvidiousInstance() string {
+	return o.invidiousInstance
+}
+
 // SortedOptions returns options as a list of key value pairs, sorted by keys.
-func (o *Options) SortedOptions() []*Option {
+func (o *Options) SortedOptions(redactSecret bool) []*Option {
 	var keyValues = map[string]interface{}{
-		"ADMIN_PASSWORD":                         o.adminPassword,
+		"ADMIN_PASSWORD":                         redactSecretValue(o.adminPassword, redactSecret),
 		"ADMIN_USERNAME":                         o.adminUsername,
 		"AUTH_PROXY_HEADER":                      o.authProxyHeader,
 		"AUTH_PROXY_USER_CREATION":               o.authProxyUserCreation,
@@ -471,15 +504,19 @@ func (o *Options) SortedOptions() []*Option {
 		"CERT_FILE":                              o.certFile,
 		"CLEANUP_ARCHIVE_READ_DAYS":              o.cleanupArchiveReadDays,
 		"CLEANUP_ARCHIVE_UNREAD_DAYS":            o.cleanupArchiveUnreadDays,
+		"CLEANUP_ARCHIVE_BATCH_SIZE":             o.cleanupArchiveBatchSize,
 		"CLEANUP_FREQUENCY_HOURS":                o.cleanupFrequencyHours,
 		"CLEANUP_REMOVE_SESSIONS_DAYS":           o.cleanupRemoveSessionsDays,
 		"CREATE_ADMIN":                           o.createAdmin,
 		"DATABASE_MAX_CONNS":                     o.databaseMaxConns,
 		"DATABASE_MIN_CONNS":                     o.databaseMinConns,
-		"DATABASE_URL":                           o.databaseURL,
+		"DATABASE_CONNECTION_LIFETIME":           o.databaseConnectionLifetime,
+		"DATABASE_URL":                           redactSecretValue(o.databaseURL, redactSecret),
 		"DEBUG":                                  o.debug,
+		"DISABLE_HSTS":                           !o.hsts,
+		"DISABLE_SCHEDULER_SERVICE":              !o.schedulerService,
+		"DISABLE_HTTP_SERVICE":                   !o.httpService,
 		"FETCH_YOUTUBE_WATCH_TIME":               o.fetchYouTubeWatchTime,
-		"HSTS":                                   o.hsts,
 		"HTTPS":                                  o.HTTPS,
 		"HTTP_CLIENT_MAX_BODY_SIZE":              o.httpClientMaxBodySize,
 		"HTTP_CLIENT_PROXY":                      o.httpClientProxy,
@@ -487,20 +524,21 @@ func (o *Options) SortedOptions() []*Option {
 		"HTTP_CLIENT_USER_AGENT":                 o.httpClientUserAgent,
 		"HTTP_SERVICE":                           o.httpService,
 		"KEY_FILE":                               o.certKeyFile,
+		"INVIDIOUS_INSTANCE":                     o.invidiousInstance,
 		"LISTEN_ADDR":                            o.listenAddr,
 		"LOG_DATE_TIME":                          o.logDateTime,
 		"MAINTENANCE_MESSAGE":                    o.maintenanceMessage,
 		"MAINTENANCE_MODE":                       o.maintenanceMode,
-		"METRICS_ALLOWED_NETWORKS":               o.metricsAllowedNetworks,
+		"METRICS_ALLOWED_NETWORKS":               strings.Join(o.metricsAllowedNetworks, ","),
 		"METRICS_COLLECTOR":                      o.metricsCollector,
 		"METRICS_REFRESH_INTERVAL":               o.metricsRefreshInterval,
 		"OAUTH2_CLIENT_ID":                       o.oauth2ClientID,
-		"OAUTH2_CLIENT_SECRET":                   o.oauth2ClientSecret,
+		"OAUTH2_CLIENT_SECRET":                   redactSecretValue(o.oauth2ClientSecret, redactSecret),
 		"OAUTH2_OIDC_DISCOVERY_ENDPOINT":         o.oauth2OidcDiscoveryEndpoint,
 		"OAUTH2_PROVIDER":                        o.oauth2Provider,
 		"OAUTH2_REDIRECT_URL":                    o.oauth2RedirectURL,
 		"OAUTH2_USER_CREATION":                   o.oauth2UserCreationAllowed,
-		"POCKET_CONSUMER_KEY":                    o.pocketConsumerKey,
+		"POCKET_CONSUMER_KEY":                    redactSecretValue(o.pocketConsumerKey, redactSecret),
 		"POLLING_FREQUENCY":                      o.pollingFrequency,
 		"POLLING_PARSING_ERROR_LIMIT":            o.pollingParsingErrorLimit,
 		"POLLING_SCHEDULER":                      o.pollingScheduler,
@@ -512,6 +550,7 @@ func (o *Options) SortedOptions() []*Option {
 		"SCHEDULER_SERVICE":                      o.schedulerService,
 		"SERVER_TIMING_HEADER":                   o.serverTimingHeader,
 		"WORKER_POOL_SIZE":                       o.workerPoolSize,
+		"WATCHDOG":                               o.watchdog,
 	}
 
 	keys := make([]string, 0, len(keyValues))
@@ -530,9 +569,16 @@ func (o *Options) SortedOptions() []*Option {
 func (o *Options) String() string {
 	var builder strings.Builder
 
-	for _, option := range o.SortedOptions() {
-		builder.WriteString(fmt.Sprintf("%s: %v\n", option.Key, option.Value))
+	for _, option := range o.SortedOptions(false) {
+		fmt.Fprintf(&builder, "%s=%v\n", option.Key, option.Value)
 	}
 
 	return builder.String()
+}
+
+func redactSecretValue(value string, redactSecret bool) string {
+	if redactSecret && value != "" {
+		return "******"
+	}
+	return value
 }

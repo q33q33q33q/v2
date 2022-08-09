@@ -48,6 +48,7 @@ func (h *handler) showEditFeedPage(w http.ResponseWriter, r *http.Request) {
 		RewriteRules:                feed.RewriteRules,
 		BlocklistRules:              feed.BlocklistRules,
 		KeeplistRules:               feed.KeeplistRules,
+		UrlRewriteRules:             feed.UrlRewriteRules,
 		Crawler:                     feed.Crawler,
 		UserAgent:                   feed.UserAgent,
 		Cookie:                      feed.Cookie,
@@ -58,6 +59,8 @@ func (h *handler) showEditFeedPage(w http.ResponseWriter, r *http.Request) {
 		AllowSelfSignedCertificates: feed.AllowSelfSignedCertificates,
 		FetchViaProxy:               feed.FetchViaProxy,
 		Disabled:                    feed.Disabled,
+		HideGlobally:                feed.HideGlobally,
+		CategoryHidden:              feed.Category.HideGlobally,
 	}
 
 	sess := session.New(h.store, request.SessionID(r))

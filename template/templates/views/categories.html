@@ -5,7 +5,7 @@
     <h1>{{ t "page.categories.title" }} ({{ .total }})</h1>
     <ul>
         <li>
-            <a href="{{ route "createCategory" }}">{{ t "menu.create_category" }}</a>
+            <a href="{{ route "createCategory" }}">{{ icon "add-category" }}{{ t "menu.create_category" }}</a>
         </li>
     </ul>
 </section>
@@ -15,12 +15,12 @@
 {{ else }}
     <div class="items">
         {{ range .categories }}
-        <article class="item">
+        <article role="article" class="item{{if gt .TotalUnread 0 }} category-has-unread{{end}}">
             <div class="item-header" dir="auto">
                 <span class="item-title">
                     <a href="{{ route "categoryEntries" "categoryID" .ID }}">{{ .Title }}</a>
                 </span>
-                (<span title="{{ if eq .FeedCount 0 }}{{ t "page.categories.no_feed" }}{{ else }}{{ plural "page.categories.feed_count" .FeedCount .FeedCount }}{{ end }}">{{ .FeedCount }}</span>)
+                (<span title="{{ t "page.categories.unread_counter" }}">{{ .TotalUnread }}</span>)
             </div>
             <div class="item-meta">
                 <ul class="item-meta-info">
@@ -48,6 +48,17 @@
                             data-label-loading="{{ t "confirm.loading" }}"
                             data-url="{{ route "removeCategory" "categoryID" .ID }}">{{ icon "delete" }}<span class="icon-label">{{ t "action.remove" }}</span></a>
                     </li>
+                    {{ end }}
+                    {{ if gt .TotalUnread 0 }}
+                      <li>
+                        <a href="#"
+                            data-confirm="true"
+                            data-label-question="{{ t "confirm.question" }}"
+                            data-label-yes="{{ t "confirm.yes" }}"
+                            data-label-no="{{ t "confirm.no" }}"
+                            data-label-loading="{{ t "confirm.loading" }}"
+                            data-url="{{ route "markCategoryAsRead" "categoryID" .ID }}">{{ icon "read" }}<span class="icon-label">{{ t "menu.mark_all_as_read" }}</span></a>
+                      </li>
                     {{ end }}
                 </ul>
             </div>
